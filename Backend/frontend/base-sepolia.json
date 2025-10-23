@@ -1,0 +1,11 @@
+{
+  "network": "Base Sepolia",
+  "chainId": 84532,
+  "contractAddress": "0xB60BD6606eD74B6463CaDA731c5C129dED9dD48F",
+  "oracle": "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1",
+  "admin": "0xf115be85e40288DbFea0D5bD01097911223Dbe37",
+  "operator": "0xf115be85e40288DbFea0D5bD01097911223Dbe37",
+  "intervalSeconds": 300,
+  "minBetAmount": "1000000000000000",
+  "treasuryFee": 300
+}
