@@ -6,6 +6,7 @@ remappings = [
     "@openzeppelin/=lib/openzeppelin-contracts/",
     "@chainlink/contracts/src/v0.8/interfaces/=lib/chainlink-brownie-contracts/contracts/src/v0.8/shared/interfaces/",
     "@chainlink/contracts/=lib/chainlink-brownie-contracts/contracts/",
+    "@pythnetwork/=lib/pyth-sdk-solidity/",
     "forge-std/=lib/forge-std/src/"
 ]
 solc_version = "0.8.20"

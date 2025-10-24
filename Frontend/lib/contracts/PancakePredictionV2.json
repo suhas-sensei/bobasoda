@@ -3,9 +3,14 @@
     "type": "constructor",
     "inputs": [
       {
-        "name": "_oracleAddress",
+        "name": "_pythContract",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "_priceId",
+        "type": "bytes32",
+        "internalType": "bytes32"
       },
       {
         "name": "_adminAddress",
@@ -33,17 +38,16 @@
         "internalType": "uint256"
       },
       {
-        "name": "_oracleUpdateAllowance",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
         "name": "_treasuryFee",
         "type": "uint256",
         "internalType": "uint256"
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
   },
   {
     "type": "function",
@@ -243,12 +247,12 @@
       {
         "name": "",
         "type": "tuple[]",
-        "internalType": "struct PancakePredictionV2.BetInfo[]",
+        "internalType": "struct PancakePredictionV2Pyth.BetInfo[]",
         "components": [
           {
             "name": "position",
             "type": "uint8",
-            "internalType": "enum PancakePredictionV2.Position"
+            "internalType": "enum PancakePredictionV2Pyth.Position"
           },
           {
             "name": "amount",
@@ -321,7 +325,7 @@
       {
         "name": "position",
         "type": "uint8",
-        "internalType": "enum PancakePredictionV2.Position"
+        "internalType": "enum PancakePredictionV2Pyth.Position"
       },
       {
         "name": "amount",
@@ -364,45 +368,6 @@
   },
   {
     "type": "function",
-    "name": "oracle",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract AggregatorV3Interface"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "oracleLatestRoundId",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "oracleUpdateAllowance",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "owner",
     "inputs": [],
     "outputs": [
@@ -436,21 +401,29 @@
   },
   {
     "type": "function",
-    "name": "recoverToken",
-    "inputs": [
+    "name": "priceId",
+    "inputs": [],
+    "outputs": [
       {
-        "name": "_token",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "_amount",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pyth",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IPyth"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -525,16 +498,6 @@
         "internalType": "int256"
       },
       {
-        "name": "lockOracleId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "closeOracleId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
         "name": "totalAmount",
         "type": "uint256",
         "internalType": "uint256"
@@ -566,19 +529,6 @@
       }
     ],
     "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "setAdmin",
-    "inputs": [
-      {
-        "name": "_adminAddress",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -619,32 +569,6 @@
         "name": "_operatorAddress",
         "type": "address",
         "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setOracle",
-    "inputs": [
-      {
-        "name": "_oracle",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setOracleUpdateAllowance",
-    "inputs": [
-      {
-        "name": "_oracleUpdateAllowance",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -819,12 +743,6 @@
         "internalType": "uint256"
       },
       {
-        "name": "roundId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
         "name": "price",
         "type": "int256",
         "indexed": false,
@@ -839,12 +757,6 @@
     "inputs": [
       {
         "name": "epoch",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
-        "name": "roundId",
         "type": "uint256",
         "indexed": true,
         "internalType": "uint256"
@@ -918,32 +830,6 @@
         "type": "address",
         "indexed": false,
         "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "NewOracle",
-    "inputs": [
-      {
-        "name": "oracle",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "NewOracleUpdateAllowance",
-    "inputs": [
-      {
-        "name": "oracleUpdateAllowance",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1058,25 +944,6 @@
   },
   {
     "type": "event",
-    "name": "TokenRecovery",
-    "inputs": [
-      {
-        "name": "token",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "TreasuryClaim",
     "inputs": [
       {
@@ -1150,16 +1017,5 @@
     "type": "error",
     "name": "ReentrancyGuardReentrantCall",
     "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "SafeERC20FailedOperation",
-    "inputs": [
-      {
-        "name": "token",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
   }
 ]

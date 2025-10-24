@@ -14,6 +14,8 @@ interface Web3ContextType {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   chainId: number | null;
+  balance: string | null;
+  refreshBalance: () => Promise<void>;
 }
 
 const Web3Context = createContext<Web3ContextType>({
@@ -25,6 +27,8 @@ const Web3Context = createContext<Web3ContextType>({
   connectWallet: async () => {},
   disconnectWallet: () => {},
   chainId: null,
+  balance: null,
+  refreshBalance: async () => {},
 });
 
 export const useWeb3 = () => useContext(Web3Context);
@@ -40,6 +44,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
   const [account, setAccount] = useState<string | null>(null);
   const [contract, setContract] = useState<Contract | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
+  const [balance, setBalance] = useState<string | null>(null);
 
   // Ensure client-side only
   useEffect(() => {
@@ -147,7 +152,28 @@ export function Web3Provider({ children }: Web3ProviderProps) {
     setAccount(null);
     setContract(null);
     setChainId(null);
+    setBalance(null);
   };
+
+  const refreshBalance = async () => {
+    if (!provider || !account) return;
+    try {
+      const bal = await provider.getBalance(account);
+      setBalance(ethers.formatEther(bal));
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+    }
+  };
+
+  // Fetch balance when account changes
+  useEffect(() => {
+    if (account && provider) {
+      refreshBalance();
+      // Refresh balance every 10 seconds
+      const interval = setInterval(refreshBalance, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [account, provider]);
 
   useEffect(() => {
     if (!mounted || typeof window === 'undefined') return;
@@ -189,6 +215,8 @@ export function Web3Provider({ children }: Web3ProviderProps) {
           connectWallet: async () => {},
           disconnectWallet: () => {},
           chainId: null,
+          balance: null,
+          refreshBalance: async () => {},
         }}
       >
         {children}
@@ -207,6 +235,8 @@ export function Web3Provider({ children }: Web3ProviderProps) {
         connectWallet,
         disconnectWallet,
         chainId,
+        balance,
+        refreshBalance,
       }}
     >
       {children}

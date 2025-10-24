@@ -7,7 +7,7 @@ import { usePredictionContract } from "@/lib/web3/hooks";
 import { BetDirection } from "@/types/prediction";
 
 export default function Home() {
-  const { isConnected, connectWallet, account } = useWeb3();
+  const { isConnected, connectWallet, account, balance, refreshBalance, contract } = useWeb3();
   const { currentEpoch, currentRound, betBull, betBear, getCurrentPrice, userBet } = usePredictionContract();
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [hasBet, setHasBet] = useState(false);
@@ -16,14 +16,17 @@ export default function Home() {
   // Check if we should use mock data (when contract not deployed)
   useEffect(() => {
     if (isConnected) {
-      // Wait 3 seconds for contract data, if still null, use mock data
+      // Wait 5 seconds for contract data, if still null, use mock data
       const timeout = setTimeout(() => {
         if (!currentRound && !currentPrice) {
           console.log('⚠️ Contract not responding, using mock data for development');
+          console.log('currentRound:', currentRound);
+          console.log('currentEpoch:', currentEpoch);
+          console.log('contract:', contract);
           setUseMockData(true);
           setCurrentPrice(3250.45); // Mock ETH price
         }
-      }, 3000);
+      }, 5000);
       return () => clearTimeout(timeout);
     }
   }, [isConnected, currentRound, currentPrice]);
@@ -65,6 +68,8 @@ export default function Home() {
         await betBear('0.0001');
       }
       setHasBet(true);
+      // Refresh balance after betting
+      await refreshBalance();
     } catch (error) {
       console.error('Error placing bet:', error);
       alert('Failed to place bet. Please try again.');
@@ -90,7 +95,7 @@ export default function Home() {
   }
 
   // Show loading screen only if not using mock data and still waiting for real data
-  if (!useMockData && (!currentRound || !currentPrice)) {
+  if (!useMockData && !currentRound) {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900 via-neutral-950 to-black" />
@@ -142,6 +147,10 @@ export default function Home() {
           <div className="text-white">
             <div className="text-xs text-neutral-400 mb-1">Connected</div>
             <div className="text-sm font-bold truncate max-w-[150px]">{account?.slice(0, 6)}...{account?.slice(-4)}</div>
+          </div>
+          <div className="text-white text-center">
+            <div className="text-xs text-neutral-400 mb-1">Balance</div>
+            <div className="text-sm font-bold">{balance ? `${parseFloat(balance).toFixed(4)} ETH` : '...'}</div>
           </div>
           <div className="text-white">
             <div className="text-xs text-neutral-400 mb-1 text-right">Round</div>

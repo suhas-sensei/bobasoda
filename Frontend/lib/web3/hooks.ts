@@ -168,19 +168,25 @@ export function usePredictionContract() {
     }
   }, [contract]);
 
-  // Get current price from oracle
+  // Get current price from oracle (simplified for Pyth - get from current round)
   const getCurrentPrice = useCallback(async () => {
     if (!contract) return null;
     try {
-      const oracleAddress = await contract.oracle();
-      const oracleABI = [
-        'function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)',
-      ];
-      const oracle = new ethers.Contract(oracleAddress, oracleABI, contract.runner);
-      const roundData = await oracle.latestRoundData();
+      // Get current epoch
+      const epoch = await contract.currentEpoch();
+      if (epoch === 0n) return null;
 
-      // Chainlink ETH/USD has 8 decimals
-      return Number(roundData.answer) / 1e8;
+      // Get current round data
+      const round = await contract.rounds(epoch);
+
+      // If round has a lock price, use it (Pyth price with 8 decimals)
+      if (round.lockPrice && round.lockPrice > 0n) {
+        return Number(round.lockPrice) / 1e8;
+      }
+
+      // Otherwise, try to get from Pyth directly (pyth.getPriceUnsafe)
+      // For now, return null and we'll get it when round locks
+      return null;
     } catch (error) {
       console.error('Error fetching current price:', error);
       return null;
