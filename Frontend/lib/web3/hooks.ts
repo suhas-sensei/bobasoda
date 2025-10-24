@@ -91,13 +91,28 @@ export function usePredictionContract() {
     if (!contract || !currentEpoch) return null;
     setIsLoading(true);
     try {
+      console.log('Placing bull bet:', { epoch: currentEpoch, amount });
       const tx = await contract.betBull(currentEpoch, {
         value: ethers.parseEther(amount),
       });
+      console.log('Transaction sent:', tx.hash);
       await tx.wait();
+      console.log('Transaction confirmed!');
       return tx;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error placing bull bet:', error);
+
+      // Try to get readable error message
+      if (error.reason) {
+        console.error('Revert reason:', error.reason);
+        alert(`Bet failed: ${error.reason}`);
+      } else if (error.message) {
+        console.error('Error message:', error.message);
+        alert(`Bet failed: ${error.message}`);
+      } else {
+        alert('Bet failed. Check console for details.');
+      }
+
       throw error;
     } finally {
       setIsLoading(false);
@@ -109,13 +124,28 @@ export function usePredictionContract() {
     if (!contract || !currentEpoch) return null;
     setIsLoading(true);
     try {
+      console.log('Placing bear bet:', { epoch: currentEpoch, amount });
       const tx = await contract.betBear(currentEpoch, {
         value: ethers.parseEther(amount),
       });
+      console.log('Transaction sent:', tx.hash);
       await tx.wait();
+      console.log('Transaction confirmed!');
       return tx;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error placing bear bet:', error);
+
+      // Try to get readable error message
+      if (error.reason) {
+        console.error('Revert reason:', error.reason);
+        alert(`Bet failed: ${error.reason}`);
+      } else if (error.message) {
+        console.error('Error message:', error.message);
+        alert(`Bet failed: ${error.message}`);
+      } else {
+        alert('Bet failed. Check console for details.');
+      }
+
       throw error;
     } finally {
       setIsLoading(false);

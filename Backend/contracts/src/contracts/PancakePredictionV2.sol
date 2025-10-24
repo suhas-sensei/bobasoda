@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 pragma abicoder v2;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -137,7 +137,7 @@ contract PancakePredictionV2 is Ownable, Pausable, ReentrancyGuard {
         uint256 _minBetAmount,
         uint256 _oracleUpdateAllowance,
         uint256 _treasuryFee
-    ) {
+    ) Ownable(_adminAddress) {
         require(_treasuryFee <= MAX_TREASURY_FEE, "Treasury fee too high");
 
         oracle = AggregatorV3Interface(_oracleAddress);

@@ -80,7 +80,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
       setSigner(walletSigner);
 
       // Initialize contract - check if address is set
-      if (CURRENT_CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
+      if (CURRENT_CONTRACT_ADDRESS.toLowerCase() === '0x0000000000000000000000000000000000000000') {
         console.warn('⚠️ Contract address not set. Please deploy the contract and update lib/contracts/config.ts');
         alert('Warning: Contract not deployed yet. Some features may not work.');
         // Still set a contract instance for development, but it won't work

@@ -58,11 +58,11 @@ export default function Home() {
     if (!isConnected || hasBet) return;
 
     try {
-      // Use minimum bet amount (0.001 ETH)
+      // Use minimum bet amount (0.0001 ETH)
       if (direction === 'up') {
-        await betBull('0.001');
+        await betBull('0.0001');
       } else {
-        await betBear('0.001');
+        await betBear('0.0001');
       }
       setHasBet(true);
     } catch (error) {
