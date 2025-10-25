@@ -28,13 +28,15 @@ export const celoSepoliaTestnet = {
 
 export const privyConfig: PrivyClientConfig = {
   embeddedWallets: {
-    createOnLogin: 'users-without-wallets',
+    createOnLogin: 'all-users',
   },
+  loginMethods: ['email', 'wallet'], // Only email and wallet - Google not enabled in dashboard
   defaultChain: celoSepoliaTestnet,
   supportedChains: [celoSepoliaTestnet],
   appearance: {
     theme: 'dark',
     accentColor: '#7645d9',
     logo: undefined,
+    walletList: ['coinbase_wallet', 'metamask'],
   },
 };
