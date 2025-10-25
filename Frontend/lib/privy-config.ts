@@ -1,9 +1,9 @@
 import type { PrivyClientConfig } from '@privy-io/react-auth';
 
-export const celoSepoliaTestnet = {
-  id: 11142220,
-  name: 'Celo Sepolia Testnet',
-  network: 'celo-sepolia',
+export const celoAlfajoresTestnet = {
+  id: 44787,
+  name: 'Celo Alfajores Testnet',
+  network: 'celo-alfajores',
   nativeCurrency: {
     name: 'CELO',
     symbol: 'CELO',
@@ -11,16 +11,16 @@ export const celoSepoliaTestnet = {
   },
   rpcUrls: {
     default: {
-      http: ['https://rpc.ankr.com/celo_sepolia'],
+      http: ['https://alfajores-forno.celo-testnet.org'],
     },
     public: {
-      http: ['https://rpc.ankr.com/celo_sepolia'],
+      http: ['https://alfajores-forno.celo-testnet.org'],
     },
   },
   blockExplorers: {
     default: {
       name: 'Celo Explorer',
-      url: 'https://explorer.celo.org/sepolia',
+      url: 'https://alfajores.celoscan.io',
     },
   },
   testnet: true,
@@ -31,8 +31,8 @@ export const privyConfig: PrivyClientConfig = {
     createOnLogin: 'all-users',
   },
   loginMethods: ['email', 'wallet'], // Only email and wallet - Google not enabled in dashboard
-  defaultChain: celoSepoliaTestnet,
-  supportedChains: [celoSepoliaTestnet],
+  defaultChain: celoAlfajoresTestnet,
+  supportedChains: [celoAlfajoresTestnet],
   appearance: {
     theme: 'dark',
     accentColor: '#7645d9',

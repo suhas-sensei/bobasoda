@@ -3,7 +3,7 @@
 import { PrivyProvider } from '@privy-io/react-auth';
 import { WagmiProvider } from '@privy-io/wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { privyConfig, celoSepoliaTestnet } from './privy-config';
+import { privyConfig, celoAlfajoresTestnet } from './privy-config';
 import { http } from 'wagmi';
 import { createConfig } from '@privy-io/wagmi';
 import { ReactNode } from 'react';
@@ -11,10 +11,10 @@ import { defineChain } from 'viem';
 
 const queryClient = new QueryClient();
 
-// Define Celo Sepolia as a proper viem chain
-export const celoSepolia = defineChain({
-  id: 11142220,
-  name: 'Celo Sepolia Testnet',
+// Define Celo Alfajores as a proper viem chain
+export const celoAlfajores = defineChain({
+  id: 44787,
+  name: 'Celo Alfajores Testnet',
   nativeCurrency: {
     name: 'CELO',
     symbol: 'CELO',
@@ -22,22 +22,22 @@ export const celoSepolia = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['https://rpc.ankr.com/celo_sepolia'],
+      http: ['https://alfajores-forno.celo-testnet.org'],
     },
   },
   blockExplorers: {
     default: {
       name: 'Celo Explorer',
-      url: 'https://explorer.celo.org/sepolia',
+      url: 'https://alfajores.celoscan.io',
     },
   },
   testnet: true,
 });
 
 export const wagmiConfig = createConfig({
-  chains: [celoSepolia],
+  chains: [celoAlfajores],
   transports: {
-    [celoSepolia.id]: http('https://rpc.ankr.com/celo_sepolia'),
+    [celoAlfajores.id]: http('https://alfajores-forno.celo-testnet.org'),
   },
 });
 

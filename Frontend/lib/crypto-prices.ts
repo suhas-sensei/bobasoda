@@ -1,3 +1,5 @@
+import { fetchPythETHPrice } from './pyth-prices';
+
 export interface CryptoPrice {
   id: string;
   name: string;
@@ -87,6 +89,10 @@ const CRYPTO_IDS = Object.keys(FALLBACK_PRICES);
 
 export async function fetchCryptoPrices(): Promise<CryptoPrice[]> {
   try {
+    // Fetch ETH price from Pyth oracle on Celo
+    const ethPriceFromPyth = await fetchPythETHPrice();
+
+    // Fetch other crypto prices from CoinGecko
     const response = await fetch(
       `${COINGECKO_API}/simple/price?ids=${CRYPTO_IDS.join(',')}&vs_currencies=usd&include_24hr_change=true`,
       {
@@ -98,7 +104,7 @@ export async function fetchCryptoPrices(): Promise<CryptoPrice[]> {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to fetch prices');
+      throw new Error('Failed to fetch prices from CoinGecko');
     }
 
     const data = await response.json();
@@ -107,6 +113,18 @@ export async function fetchCryptoPrices(): Promise<CryptoPrice[]> {
       const fallback = FALLBACK_PRICES[id];
       const priceData = data[id];
 
+      // Use Pyth price for Ethereum
+      if (id === 'ethereum') {
+        return {
+          id,
+          name: fallback.name,
+          symbol: fallback.symbol,
+          currentPrice: ethPriceFromPyth,
+          priceChange24h: priceData?.usd_24h_change || 0,
+        };
+      }
+
+      // Use CoinGecko for other cryptos
       if (priceData) {
         return {
           id,

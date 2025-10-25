@@ -1,17 +1,13 @@
 #!/bin/bash
 
 # Configuration from .env.local
-CONTRACT="0x2193622E5797C9D4C6cD8b486814453F4b2530B4"
+CONTRACT="0x93b07e384dA57399AF517C6492840CA8d70BD11A"
 RPC="https://alfajores-forno.celo-testnet.org"
 PRIVATE_KEY="0x2812270ffa3e05a6f9a0e136b34f94fad94125652fc06053f09ad83dad293315"
 INTERVAL_SECONDS=30
 
-# Detect OS and set cast path
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    CAST="C:\\Users\\suhas\\.foundry\\bin\\cast.exe"
-else
-    CAST="cast"
-fi
+# Use cast from PATH
+CAST="cast"
 
 echo "🚀 Starting ETH Prediction Game - Unlimited Rounds"
 echo "📊 Contract: $CONTRACT"
@@ -44,7 +40,7 @@ execute_tx() {
 echo "================================================"
 echo "STEP 1: Initialize Genesis - Starting Round 1"
 echo "================================================"
-execute_tx "genesisStartRound" "$CAST send $CONTRACT 'genesisStartRound()' --rpc-url $RPC --private-key $PRIVATE_KEY"
+execute_tx "genesisStartRound" "$CAST send $CONTRACT \"genesisStartRound()\" --rpc-url $RPC --private-key $PRIVATE_KEY"
 
 echo "⏳ Waiting ${INTERVAL_SECONDS} seconds for Round 1 to reach lockTimestamp..."
 sleep $INTERVAL_SECONDS
@@ -54,7 +50,7 @@ echo ""
 echo "================================================"
 echo "STEP 2: Lock Genesis - Locking Round 1, Starting Round 2"
 echo "================================================"
-execute_tx "genesisLockRound" "$CAST send $CONTRACT 'genesisLockRound()' --rpc-url $RPC --private-key $PRIVATE_KEY"
+execute_tx "genesisLockRound" "$CAST send $CONTRACT \"genesisLockRound()\" --rpc-url $RPC --private-key $PRIVATE_KEY"
 
 echo "⏳ Waiting ${INTERVAL_SECONDS} seconds for Round 2 to reach lockTimestamp..."
 sleep $INTERVAL_SECONDS
@@ -79,7 +75,7 @@ while true; do
     echo "  - Start Round $current_round"
     echo ""
 
-    execute_tx "executeRound #$current_round" "$CAST send $CONTRACT 'executeRound()' --rpc-url $RPC --private-key $PRIVATE_KEY"
+    execute_tx "executeRound #$current_round" "$CAST send $CONTRACT \"executeRound()\" --rpc-url $RPC --private-key $PRIVATE_KEY"
 
     echo "⏳ Waiting ${INTERVAL_SECONDS} seconds for next round..."
     echo ""
