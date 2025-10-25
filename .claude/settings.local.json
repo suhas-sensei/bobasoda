@@ -31,7 +31,10 @@
       "Bash(rm:*)",
       "Bash(CONTRACT=0x8e5804B35DBDD2F4494087bc01349e1c503Fd63a)",
       "Bash(CONTRACT=0x2193622E5797C9D4C6cD8b486814453F4b2530B4)",
-      "Bash(WALLET=0x75110c86Ba04fA22Fd77143D37D89e1B63eAAbA8:*)"
+      "Bash(WALLET=0x75110c86Ba04fA22Fd77143D37D89e1B63eAAbA8:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.pyth.network)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []

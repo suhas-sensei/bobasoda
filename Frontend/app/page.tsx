@@ -4,14 +4,14 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef } from "react";
 import { PredictionCard } from "@/components/PredictionCard";
-import { RoundResults } from "@/components/RoundResults";
 import { LoginScreen } from "@/components/LoginScreen";
 import { WalletInfo } from "@/components/WalletInfo";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAccount, useChainId } from "wagmi";
-import { BetDirection, DemoRoundResult } from "@/types/prediction";
-import { fetchCryptoPrices, getRandomCryptos, CryptoPrice } from "@/lib/crypto-prices";
-import { DemoGame, DemoCard } from "@/lib/demo-game";
+import { BetDirection } from "@/types/prediction";
+import { roundManager, RoundData } from "@/lib/round-manager";
+import { usePredictionContract } from "@/lib/web3/hooks";
+import { PREDICTION_CONFIG } from "@/lib/contracts/config";
 
 export default function Home() {
   const { authenticated, user } = usePrivy();
@@ -21,6 +21,19 @@ export default function Home() {
   const chainId = useChainId();
   const { address: account, chain } = useAccount();
 
+  // Contract hooks
+  const { currentEpoch, currentRound: contractRound, betBull, betBear, isLoading } = usePredictionContract();
+
+  // Round management
+  const [currentRound, setCurrentRound] = useState<RoundData | null>(null);
+  const [nextRound, setNextRound] = useState<RoundData | null>(null);
+  const [ethPrice, setEthPrice] = useState<number>(2500); // Default ETH price
+  const [showBetModal, setShowBetModal] = useState(false);
+  const [betAmount, setBetAmount] = useState<string>('0.01');
+  const [userBetDirection, setUserBetDirection] = useState<'bull' | 'bear' | null>(null);
+  const [hasPlacedBet, setHasPlacedBet] = useState(false);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
   // Log network info when connected
   useEffect(() => {
     if (isConnected && account) {
@@ -29,7 +42,7 @@ export default function Home() {
       console.log('═══════════════════════════════════════');
       console.log('Chain ID:', chainId);
       console.log('Chain Name:', chain?.name);
-      console.log('Is Celo Sepolia?', chainId === 11142220);
+      console.log('Is Base Sepolia?', chainId === 84532);
       console.log('───────────────────────────────────────');
       console.log('💼 YOUR WALLET ADDRESS:');
       console.log(account);
@@ -46,93 +59,70 @@ export default function Home() {
     }
   }, [isConnected, chainId, chain, account, user]);
 
-  // Demo mode states
-  const [demoMode] = useState(true); // Always in demo mode
-  const [cryptoPrices, setCryptoPrices] = useState<CryptoPrice[]>([]);
-  const [currentCards, setCurrentCards] = useState<DemoCard[]>([]);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [showResults, setShowResults] = useState(false);
-  const [roundResult, setRoundResult] = useState<DemoRoundResult | null>(null);
-  const [roundNumber, setRoundNumber] = useState(1);
-  const gameRef = useRef<DemoGame>(new DemoGame());
-
-  // Initialize crypto prices and cards on mount
+  // Update time and round status every 100ms
   useEffect(() => {
-    const initializePrices = async () => {
-      const prices = await fetchCryptoPrices();
-      setCryptoPrices(prices);
-      startNewRound(prices);
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setCurrentTime(now);
+      roundManager.updateRoundStatus(now);
+      setCurrentRound(roundManager.getCurrentRound());
+      setNextRound(roundManager.getNextRound());
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Simulate ETH price changes
+  useEffect(() => {
+    const updatePrice = () => {
+      setEthPrice(prev => {
+        const change = (Math.random() - 0.5) * 10; // -5 to +5
+        return Math.max(2000, Math.min(3000, prev + change));
+      });
     };
 
-    if (isConnected && demoMode) {
-      initializePrices();
-    }
-  }, [isConnected, demoMode]);
+    const interval = setInterval(updatePrice, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const startNewRound = (prices: CryptoPrice[]) => {
-    gameRef.current.reset();
-    setShowResults(false);
-    setCurrentCardIndex(0);
+  const handleSwipe = async (direction: BetDirection) => {
+    if (!account || hasPlacedBet) return;
 
-    // Select 5 random cryptos
-    const selectedIds = getRandomCryptos(5);
-    const cards: DemoCard[] = selectedIds
-      .map(id => {
-        const crypto = prices.find(p => p.id === id);
-        if (!crypto) {
-          console.warn(`Crypto not found for id: ${id}`);
-          return null;
-        }
-        return {
-          crypto,
-          startPrice: crypto.currentPrice,
-          timeframe: 15, // 15 seconds per card
-        };
-      })
-      .filter((card): card is DemoCard => card !== null);
-
-    setCurrentCards(cards);
+    const position = direction === 'up' ? 'bull' : 'bear';
+    setUserBetDirection(position);
+    setShowBetModal(true);
   };
 
-  const handleSwipe = (direction: BetDirection) => {
-    const currentCard = currentCards[currentCardIndex];
-    if (!currentCard) return;
+  const confirmBet = async () => {
+    if (!userBetDirection || !account || isLoading) return;
 
-    // Record the swipe
-    gameRef.current.recordSwipe(currentCard, direction);
+    try {
+      // Place bet on the contract for the NEXT round
+      if (userBetDirection === 'bull') {
+        await betBull(betAmount);
+      } else {
+        await betBear(betAmount);
+      }
 
-    // Move to next card or show results
-    moveToNextCard();
-  };
+      // Add to local round manager for display
+      roundManager.addUserBetToNextRound(
+        userBetDirection,
+        parseFloat(betAmount),
+        account
+      );
 
-  const handleTimeExpired = () => {
-    // Card expired without a swipe, skip it
-    moveToNextCard();
-  };
+      setHasPlacedBet(true);
+      setShowBetModal(false);
 
-  const moveToNextCard = () => {
-    if (currentCardIndex < currentCards.length - 1) {
+      // Reset for next round
       setTimeout(() => {
-        setCurrentCardIndex(prev => prev + 1);
-      }, 500);
-    } else {
-      // Round complete, show results
-      setTimeout(() => {
-        const result: DemoRoundResult = {
-          swipes: gameRef.current.getSwipes(),
-          totalProfit: gameRef.current.getTotalProfit(),
-          winCount: gameRef.current.getWinCount(),
-          lossCount: gameRef.current.getLossCount(),
-        };
-        setRoundResult(result);
-        setShowResults(true);
-      }, 500);
+        setHasPlacedBet(false);
+        setUserBetDirection(null);
+      }, 30000);
+    } catch (error) {
+      console.error('Bet failed:', error);
+      setUserBetDirection(null);
     }
-  };
-
-  const handleNextRound = () => {
-    setRoundNumber(prev => prev + 1);
-    startNewRound(cryptoPrices);
   };
 
   // Show wallet connect screen
@@ -140,26 +130,22 @@ export default function Home() {
     return <LoginScreen />;
   }
 
-  // Show loading while fetching prices
-  if (currentCards.length === 0) {
+  // Show loading while initializing
+  if (!currentRound || !nextRound) {
     return (
       <div className="min-h-screen bg-[#08060b] flex items-center justify-center">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a1028] via-[#08060b] to-black" />
         <div className="relative z-10 text-center">
           <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#7645d9] mx-auto mb-4"></div>
-          <p className="text-white text-xl font-black">Loading crypto prices...</p>
+          <p className="text-white text-xl font-black">Initializing rounds...</p>
         </div>
       </div>
     );
   }
 
-  // Show results screen
-  if (showResults && roundResult) {
-    return <RoundResults result={roundResult} onNextRound={handleNextRound} />;
-  }
-
-  const currentCard = currentCards[currentCardIndex];
-  if (!currentCard) return null;
+  const timeSinceStart = roundManager.getTimeSinceStart();
+  const multipliers = roundManager.getMultipliers(nextRound);
+  const totalPool = roundManager.getTotalPoolSize(nextRound);
 
   return (
     <div className="min-h-screen bg-[#08060b] flex items-center justify-center overflow-hidden relative">
@@ -171,18 +157,18 @@ export default function Home() {
         {/* Network indicator */}
         <div className="max-w-md mx-auto mb-3 flex justify-center">
           <div className={`px-4 py-2 rounded-full backdrop-blur-xl border-2 ${
-            chainId === 11142220
+            chainId === 84532
               ? 'bg-[#31d0aa]/20 border-[#31d0aa]'
               : 'bg-yellow-500/20 border-yellow-500'
           }`}>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${
-                chainId === 11142220 ? 'bg-[#31d0aa]' : 'bg-yellow-500'
+                chainId === 84532 ? 'bg-[#31d0aa]' : 'bg-yellow-500'
               } animate-pulse`} />
               <span className={`text-xs font-bold ${
-                chainId === 11142220 ? 'text-[#31d0aa]' : 'text-yellow-500'
+                chainId === 84532 ? 'text-[#31d0aa]' : 'text-yellow-500'
               }`}>
-                {chainId === 11142220 ? 'Celo Sepolia Testnet' : (chain?.name || 'Unknown Network')} (ID: {chainId})
+                {chainId === 84532 ? 'Base Sepolia Testnet' : (chain?.name || 'Unknown Network')} (ID: {chainId})
               </span>
             </div>
           </div>
@@ -191,48 +177,157 @@ export default function Home() {
         <div className="max-w-md mx-auto flex items-center justify-between">
           <WalletInfo />
           <div className="text-white text-center">
-            <div className="text-xs font-bold text-[#b8add2] mb-1">Round</div>
-            <div className="text-2xl font-black">#{roundNumber}</div>
+            <div className="text-xs font-bold text-[#b8add2] mb-1">Current Round</div>
+            <div className="text-2xl font-black">#{currentRound.epoch}</div>
           </div>
           <div className="text-white">
-            <div className="text-xs font-bold text-[#b8add2] mb-1 text-right">Card</div>
-            <div className="text-2xl font-black text-right">{currentCardIndex + 1}/5</div>
+            <div className="text-xs font-bold text-[#b8add2] mb-1 text-right">Next Round</div>
+            <div className="text-2xl font-black text-right">#{nextRound.epoch}</div>
           </div>
         </div>
       </div>
 
-      {/* Single Card */}
+      {/* Single ETH Card */}
       <div className="relative w-full h-screen max-w-2xl">
         <PredictionCard
-          key={currentCardIndex}
+          key={`round-${currentRound.epoch}`}
           prediction={{
-            id: currentCardIndex.toString(),
-            asset: currentCard.crypto.name,
-            symbol: currentCard.crypto.symbol,
-            currentPrice: currentCard.startPrice,
-            timeframe: currentCard.timeframe,
-            poolUp: 0,
-            poolDown: 0,
-            multiplierUp: 1.95,
-            multiplierDown: 1.95,
-            endsAt: Date.now() + currentCard.timeframe * 1000,
+            id: currentRound.epoch.toString(),
+            asset: 'Ethereum',
+            symbol: 'ETH',
+            currentPrice: ethPrice,
+            timeframe: PREDICTION_CONFIG.intervalSeconds,
+            poolUp: nextRound.bullAmount,
+            poolDown: nextRound.bearAmount,
+            multiplierUp: multipliers.bull,
+            multiplierDown: multipliers.bear,
+            endsAt: currentRound.endTime,
           }}
           onSwipe={handleSwipe}
-          onTimeExpired={handleTimeExpired}
-          isActive={true}
-          hasBet={false}
+          onTimeExpired={() => {}}
+          isActive={!hasPlacedBet}
+          hasBet={hasPlacedBet}
+          userPosition={hasPlacedBet && userBetDirection ? (userBetDirection === 'bull' ? 0 : 1) : undefined}
         />
       </div>
 
-      {/* Bottom hint */}
-      <div className="absolute bottom-8 left-0 right-0 z-20 text-center px-4">
-        <div className="bg-[#7645d9]/20 border-2 border-[#7645d9] rounded-2xl px-6 py-4 mx-auto max-w-md mb-3">
-          <p className="text-[#a881fd] text-sm font-black">
-            Demo Mode - Prices are simulated
-          </p>
+      {/* Bet Modal */}
+      {showBetModal && (
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-30 flex items-center justify-center p-4">
+          <div className="bg-[#27262c] border-2 border-[#383241] rounded-3xl p-8 max-w-md w-full">
+            <h3 className="text-white text-2xl font-black mb-4">
+              Confirm Your Bet
+            </h3>
+            <p className="text-[#b8add2] text-sm mb-6">
+              Betting on <span className="font-black">NEXT ROUND #{nextRound.epoch}</span>
+            </p>
+
+            <div className={`p-6 rounded-2xl mb-6 ${
+              userBetDirection === 'bull'
+                ? 'bg-[#31d0aa]/20 border-2 border-[#31d0aa]'
+                : 'bg-[#ed4b9e]/20 border-2 border-[#ed4b9e]'
+            }`}>
+              <p className={`text-xl font-black mb-2 ${
+                userBetDirection === 'bull' ? 'text-[#31d0aa]' : 'text-[#ed4b9e]'
+              }`}>
+                {userBetDirection === 'bull' ? 'UP ⬆' : 'DOWN ⬇'}
+              </p>
+              <p className="text-white text-sm font-bold">
+                Potential payout: {userBetDirection === 'bull' ? multipliers.bull.toFixed(2) : multipliers.bear.toFixed(2)}x
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="text-[#b8add2] text-sm font-bold mb-2 block">
+                Bet Amount (ETH)
+              </label>
+              <input
+                type="number"
+                step="0.001"
+                min={PREDICTION_CONFIG.minBetAmount}
+                value={betAmount}
+                onChange={(e) => setBetAmount(e.target.value)}
+                className="w-full bg-[#353547] text-white px-4 py-3 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#7645d9]"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowBetModal(false);
+                  setUserBetDirection(null);
+                }}
+                className="flex-1 bg-[#353547] text-white px-6 py-3 rounded-xl font-black hover:bg-[#454357] transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmBet}
+                disabled={isLoading}
+                className={`flex-1 px-6 py-3 rounded-xl font-black transition ${
+                  userBetDirection === 'bull'
+                    ? 'bg-[#31d0aa] text-white hover:bg-[#2ab899]'
+                    : 'bg-[#ed4b9e] text-white hover:bg-[#d6438e]'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {isLoading ? 'Placing Bet...' : 'Confirm Bet'}
+              </button>
+            </div>
+          </div>
         </div>
-        <p className="text-[#b8add2] text-sm font-bold animate-pulse">
-          Swipe <span className="text-[#31d0aa] font-black">RIGHT</span> for UP • Swipe <span className="text-[#ed4b9e] font-black">LEFT</span> for DOWN
+      )}
+
+      {/* Bottom info */}
+      <div className="absolute bottom-8 left-0 right-0 z-20 text-center px-4">
+        <div className="bg-[#27262c]/90 border-2 border-[#383241] rounded-2xl px-6 py-4 mx-auto max-w-md mb-3 backdrop-blur-xl">
+          <div className="flex justify-between items-center mb-3">
+            <div className="text-left">
+              <p className="text-[#b8add2] text-xs font-bold">Current Round</p>
+              <p className="text-white text-lg font-black">
+                {Math.floor(timeSinceStart / 1000)}s / 30s
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[#b8add2] text-xs font-bold">Status</p>
+              <p className={`text-lg font-black ${
+                currentRound.status === 'betting' ? 'text-[#31d0aa]' :
+                currentRound.status === 'locked' ? 'text-[#ed4b9e]' :
+                'text-[#b8add2]'
+              }`}>
+                {currentRound.status === 'betting' ? '🟢 Live' :
+                 currentRound.status === 'locked' ? '🔒 Locked' :
+                 '✅ Ended'}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[#b8add2] text-xs font-bold">Total Pool</p>
+              <p className="text-white text-lg font-black">${totalPool.toFixed(3)}</p>
+            </div>
+          </div>
+
+          <div className="border-t border-[#383241] pt-3">
+            <p className="text-[#a881fd] text-xs font-bold mb-2">
+              {nextRound.simulatedBets.length} bets on next round #{nextRound.epoch}
+            </p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-[#31d0aa]/10 rounded-lg p-2">
+                <p className="text-[#31d0aa] font-bold">UP: {nextRound.bullAmount.toFixed(3)} ETH</p>
+              </div>
+              <div className="bg-[#ed4b9e]/10 rounded-lg p-2">
+                <p className="text-[#ed4b9e] font-bold">DOWN: {nextRound.bearAmount.toFixed(3)} ETH</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-[#b8add2] text-sm font-bold">
+          {hasPlacedBet ? (
+            <span className="text-[#31d0aa]">Bet placed for next round! Waiting for current round to end...</span>
+          ) : (
+            <>
+              Swipe <span className="text-[#31d0aa] font-black">RIGHT</span> for UP • Swipe <span className="text-[#ed4b9e] font-black">LEFT</span> for DOWN
+            </>
+          )}
         </p>
       </div>
     </div>
