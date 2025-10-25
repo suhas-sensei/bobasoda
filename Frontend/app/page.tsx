@@ -39,14 +39,17 @@ export default function Home() {
 
     // Select 5 random cryptos
     const selectedIds = getRandomCryptos(5);
-    const cards: DemoCard[] = selectedIds.map(id => {
-      const crypto = prices.find(p => p.id === id)!;
-      return {
-        crypto,
-        startPrice: crypto.currentPrice,
-        timeframe: 15, // 15 seconds per card
-      };
-    });
+    const cards: DemoCard[] = selectedIds
+      .map(id => {
+        const crypto = prices.find(p => p.id === id);
+        if (!crypto) return null;
+        return {
+          crypto,
+          startPrice: crypto.currentPrice,
+          timeframe: 15, // 15 seconds per card
+        };
+      })
+      .filter((card): card is DemoCard => card !== null);
 
     setCurrentCards(cards);
   };

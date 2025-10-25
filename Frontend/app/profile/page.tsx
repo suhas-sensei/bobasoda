@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image";
 import { BottomNavbar } from "@/components/BottomNavbar";
 
 export default function Profile() {
@@ -12,6 +13,17 @@ export default function Profile() {
       <div className="relative w-full max-w-[550px] h-screen bg-[#08060b] shadow-2xl">
         {/* Phone screen gradient */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a1028] via-[#08060b] to-black" />
+
+        {/* Profile Image - Top Left */}
+        <div className="absolute top-6 left-6 z-50">
+          <Image
+            src="/profile-avatar.jpg"
+            alt="Profile"
+            width={48}
+            height={48}
+            className="rounded-full border-2 border-white/20 shadow-lg"
+          />
+        </div>
 
         {/* Content */}
         <div className="relative w-full h-full flex items-center justify-center">
