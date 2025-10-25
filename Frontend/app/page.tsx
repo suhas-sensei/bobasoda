@@ -1,160 +1,145 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PredictionCard } from "@/components/PredictionCard";
-import { useWeb3 } from "@/lib/web3/provider";
-import { usePredictionContract } from "@/lib/web3/hooks";
-import { BetDirection } from "@/types/prediction";
+import { RoundResults } from "@/components/RoundResults";
+import { LoginScreen } from "@/components/LoginScreen";
+import { useAccount } from "wagmi";
+import { BetDirection, DemoRoundResult } from "@/types/prediction";
+import { fetchCryptoPrices, getRandomCryptos, CryptoPrice } from "@/lib/crypto-prices";
+import { DemoGame, DemoCard } from "@/lib/demo-game";
 
 export default function Home() {
-  const { isConnected, connectWallet, account, balance, refreshBalance, contract } = useWeb3();
-  const { currentEpoch, currentRound, betBull, betBear, getCurrentPrice, userBet } = usePredictionContract();
-  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
-  const [hasBet, setHasBet] = useState(false);
-  const [useMockData, setUseMockData] = useState(false);
+  const { address: account, isConnected } = useAccount();
 
-  // Check if we should use mock data (when contract not deployed)
-  useEffect(() => {
-    if (isConnected) {
-      // Wait 5 seconds for contract data, if still null, use mock data
-      const timeout = setTimeout(() => {
-        if (!currentRound && !currentPrice) {
-          console.log('⚠️ Contract not responding, using mock data for development');
-          console.log('currentRound:', currentRound);
-          console.log('currentEpoch:', currentEpoch);
-          console.log('contract:', contract);
-          setUseMockData(true);
-          setCurrentPrice(3250.45); // Mock ETH price
-        }
-      }, 5000);
-      return () => clearTimeout(timeout);
-    }
-  }, [isConnected, currentRound, currentPrice]);
+  // Demo mode states
+  const [demoMode] = useState(true); // Always in demo mode
+  const [cryptoPrices, setCryptoPrices] = useState<CryptoPrice[]>([]);
+  const [currentCards, setCurrentCards] = useState<DemoCard[]>([]);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [showResults, setShowResults] = useState(false);
+  const [roundResult, setRoundResult] = useState<DemoRoundResult | null>(null);
+  const [roundNumber, setRoundNumber] = useState(1);
+  const gameRef = useRef<DemoGame>(new DemoGame());
 
-  // Fetch current price from oracle
+  // Initialize crypto prices and cards on mount
   useEffect(() => {
-    const fetchPrice = async () => {
-      const price = await getCurrentPrice();
-      if (price) {
-        setCurrentPrice(price);
-        setUseMockData(false); // We got real data
-      }
+    const initializePrices = async () => {
+      const prices = await fetchCryptoPrices();
+      setCryptoPrices(prices);
+      startNewRound(prices);
     };
 
-    if (isConnected && !useMockData) {
-      fetchPrice();
-      const interval = setInterval(fetchPrice, 10000); // Update every 10 seconds
-      return () => clearInterval(interval);
+    if (isConnected && demoMode) {
+      initializePrices();
     }
-  }, [isConnected, getCurrentPrice, useMockData]);
+  }, [isConnected, demoMode]);
 
-  // Check if user has bet in current round
-  useEffect(() => {
-    if (userBet && userBet.amount > 0n) {
-      setHasBet(true);
+  const startNewRound = (prices: CryptoPrice[]) => {
+    gameRef.current.reset();
+    setShowResults(false);
+    setCurrentCardIndex(0);
+
+    // Select 5 random cryptos
+    const selectedIds = getRandomCryptos(5);
+    const cards: DemoCard[] = selectedIds.map(id => {
+      const crypto = prices.find(p => p.id === id)!;
+      return {
+        crypto,
+        startPrice: crypto.currentPrice,
+        timeframe: 15, // 15 seconds per card
+      };
+    });
+
+    setCurrentCards(cards);
+  };
+
+  const handleSwipe = (direction: BetDirection) => {
+    const currentCard = currentCards[currentCardIndex];
+    if (!currentCard) return;
+
+    // Record the swipe
+    gameRef.current.recordSwipe(currentCard, direction);
+
+    // Move to next card or show results
+    moveToNextCard();
+  };
+
+  const handleTimeExpired = () => {
+    // Card expired without a swipe, skip it
+    moveToNextCard();
+  };
+
+  const moveToNextCard = () => {
+    if (currentCardIndex < currentCards.length - 1) {
+      setTimeout(() => {
+        setCurrentCardIndex(prev => prev + 1);
+      }, 500);
     } else {
-      setHasBet(false);
-    }
-  }, [userBet]);
-
-  const handleSwipe = async (direction: BetDirection) => {
-    if (!isConnected || hasBet) return;
-
-    try {
-      // Use minimum bet amount (0.0001 ETH)
-      if (direction === 'up') {
-        await betBull('0.0001');
-      } else {
-        await betBear('0.0001');
-      }
-      setHasBet(true);
-      // Refresh balance after betting
-      await refreshBalance();
-    } catch (error) {
-      console.error('Error placing bet:', error);
-      alert('Failed to place bet. Please try again.');
+      // Round complete, show results
+      setTimeout(() => {
+        const result: DemoRoundResult = {
+          swipes: gameRef.current.getSwipes(),
+          totalProfit: gameRef.current.getTotalProfit(),
+          winCount: gameRef.current.getWinCount(),
+          lossCount: gameRef.current.getLossCount(),
+        };
+        setRoundResult(result);
+        setShowResults(true);
+      }, 500);
     }
   };
 
+  const handleNextRound = () => {
+    setRoundNumber(prev => prev + 1);
+    startNewRound(cryptoPrices);
+  };
+
+  // Show wallet connect screen
   if (!isConnected) {
-    return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900 via-neutral-950 to-black" />
-        <div className="relative z-10 text-center p-8">
-          <h1 className="text-4xl font-bold text-white mb-4">ETH/USD Prediction</h1>
-          <p className="text-neutral-400 mb-8">Connect your wallet to start predicting</p>
-          <button
-            onClick={connectWallet}
-            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
-          >
-            Connect Wallet
-          </button>
-        </div>
-      </div>
-    );
+    return <LoginScreen />;
   }
 
-  // Show loading screen only if not using mock data and still waiting for real data
-  if (!useMockData && !currentRound) {
+  // Show loading while fetching prices
+  if (currentCards.length === 0) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900 via-neutral-950 to-black" />
+      <div className="min-h-screen bg-[#08060b] flex items-center justify-center">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a1028] via-[#08060b] to-black" />
         <div className="relative z-10 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white">Loading prediction round...</p>
-          <p className="text-neutral-500 text-xs mt-2">Waiting for contract data...</p>
+          <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#7645d9] mx-auto mb-4"></div>
+          <p className="text-white text-xl font-black">Loading crypto prices...</p>
         </div>
       </div>
     );
   }
 
-  // Use mock data or real data
-  const mockRound = {
-    bullAmount: 0n,
-    bearAmount: 0n,
-    lockTimestamp: BigInt(Math.floor(Date.now() / 1000) + 20), // 20 seconds from now
-  };
+  // Show results screen
+  if (showResults && roundResult) {
+    return <RoundResults result={roundResult} onNextRound={handleNextRound} />;
+  }
 
-  const activeRound = useMockData ? mockRound : currentRound!;
-  const activeEpoch = useMockData ? 1n : currentEpoch;
-  const activePrice = currentPrice || 3250.45;
-
-  // Calculate pool amounts and multipliers
-  const bullAmount = Number(activeRound.bullAmount) / 1e18;
-  const bearAmount = Number(activeRound.bearAmount) / 1e18;
-  const totalAmount = bullAmount + bearAmount;
-
-  const multiplierUp = totalAmount > 0 && bullAmount > 0 ? totalAmount / bullAmount : 2.0;
-  const multiplierDown = totalAmount > 0 && bearAmount > 0 ? totalAmount / bearAmount : 2.0;
+  const currentCard = currentCards[currentCardIndex];
+  if (!currentCard) return null;
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center overflow-hidden relative">
+    <div className="min-h-screen bg-[#08060b] flex items-center justify-center overflow-hidden relative">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900 via-neutral-950 to-black" />
-
-      {/* Mock Data Warning Banner */}
-      {useMockData && (
-        <div className="absolute top-0 left-0 right-0 bg-yellow-600/20 border-b border-yellow-600/50 px-4 py-2 z-30">
-          <p className="text-yellow-200 text-xs text-center">
-            ⚠️ DEMO MODE: Contract not deployed. Deploy contract to use real prediction market.
-          </p>
-        </div>
-      )}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a1028] via-[#08060b] to-black" />
 
       {/* Stats overlay - top */}
-      <div className={`absolute top-0 left-0 right-0 p-6 z-20 ${useMockData ? 'mt-8' : ''}`}>
+      <div className="absolute top-0 left-0 right-0 p-6 z-20">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="text-white">
-            <div className="text-xs text-neutral-400 mb-1">Connected</div>
-            <div className="text-sm font-bold truncate max-w-[150px]">{account?.slice(0, 6)}...{account?.slice(-4)}</div>
+            <div className="text-xs font-bold text-[#b8add2] mb-1">Connected</div>
+            <div className="text-sm font-black truncate max-w-[150px]">{account?.slice(0, 6)}...{account?.slice(-4)}</div>
           </div>
           <div className="text-white text-center">
-            <div className="text-xs text-neutral-400 mb-1">Balance</div>
-            <div className="text-sm font-bold">{balance ? `${parseFloat(balance).toFixed(4)} ETH` : '...'}</div>
+            <div className="text-xs font-bold text-[#b8add2] mb-1">Round</div>
+            <div className="text-2xl font-black">#{roundNumber}</div>
           </div>
           <div className="text-white">
-            <div className="text-xs text-neutral-400 mb-1 text-right">Round</div>
-            <div className="text-xl font-bold text-right">#{activeEpoch?.toString()}</div>
+            <div className="text-xs font-bold text-[#b8add2] mb-1 text-right">Card</div>
+            <div className="text-2xl font-black text-right">{currentCardIndex + 1}/5</div>
           </div>
         </div>
       </div>
@@ -162,47 +147,37 @@ export default function Home() {
       {/* Single Card */}
       <div className="relative w-full h-screen max-w-2xl">
         <PredictionCard
+          key={currentCardIndex}
           prediction={{
-            id: activeEpoch?.toString() || '0',
-            asset: 'Ethereum',
-            symbol: 'ETH/USD',
-            currentPrice: activePrice,
-            timeframe: 20, // 20 seconds for betting
-            poolUp: bullAmount,
-            poolDown: bearAmount,
-            multiplierUp: Number(multiplierUp.toFixed(2)),
-            multiplierDown: Number(multiplierDown.toFixed(2)),
-            endsAt: Number(activeRound.lockTimestamp) * 1000, // Convert to milliseconds
+            id: currentCardIndex.toString(),
+            asset: currentCard.crypto.name,
+            symbol: currentCard.crypto.symbol,
+            currentPrice: currentCard.startPrice,
+            timeframe: currentCard.timeframe,
+            poolUp: 0,
+            poolDown: 0,
+            multiplierUp: 1.95,
+            multiplierDown: 1.95,
+            endsAt: Date.now() + currentCard.timeframe * 1000,
           }}
-          onSwipe={useMockData ? (dir) => {
-            alert('🎮 DEMO MODE: Betting is disabled. Deploy the contract to place real bets!');
-          } : handleSwipe}
+          onSwipe={handleSwipe}
+          onTimeExpired={handleTimeExpired}
           isActive={true}
-          hasBet={hasBet}
-          userPosition={userBet?.position}
+          hasBet={false}
         />
       </div>
 
       {/* Bottom hint */}
-      {!hasBet && (
-        <div className="absolute bottom-8 left-0 right-0 z-20 text-center animate-pulse">
-          <p className="text-neutral-400 text-sm">
-            {useMockData
-              ? 'Swipe to test the UI (Demo Mode - No real bets)'
-              : 'Swipe to make your prediction (0.001 ETH)'}
+      <div className="absolute bottom-8 left-0 right-0 z-20 text-center px-4">
+        <div className="bg-[#7645d9]/20 border-2 border-[#7645d9] rounded-2xl px-6 py-4 mx-auto max-w-md mb-3">
+          <p className="text-[#a881fd] text-sm font-black">
+            Demo Mode - Prices are simulated
           </p>
         </div>
-      )}
-
-      {hasBet && (
-        <div className="absolute bottom-8 left-0 right-0 z-20 text-center">
-          <div className="bg-green-500/20 border border-green-500 rounded-lg px-6 py-3 mx-auto max-w-md">
-            <p className="text-green-400 text-sm font-semibold">
-              Bet Placed! Position: {userBet?.position === 0 ? 'UP' : 'DOWN'}
-            </p>
-          </div>
-        </div>
-      )}
+        <p className="text-[#b8add2] text-sm font-bold animate-pulse">
+          Swipe <span className="text-[#31d0aa] font-black">RIGHT</span> for UP • Swipe <span className="text-[#ed4b9e] font-black">LEFT</span> for DOWN
+        </p>
+      </div>
     </div>
   );
 }

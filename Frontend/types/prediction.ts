@@ -19,3 +19,20 @@ export interface BetResult {
   amount: number;
   timestamp: number;
 }
+
+export interface DemoSwipe {
+  asset: string;
+  symbol: string;
+  startPrice: number;
+  endPrice: number;
+  prediction: BetDirection;
+  result: 'win' | 'loss';
+  profit: number; // in USD
+}
+
+export interface DemoRoundResult {
+  swipes: DemoSwipe[];
+  totalProfit: number;
+  winCount: number;
+  lossCount: number;
+}

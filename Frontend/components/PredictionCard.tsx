@@ -10,14 +10,16 @@ import { cn } from "@/lib/utils";
 interface PredictionCardProps {
   prediction: Prediction;
   onSwipe: (direction: 'up' | 'down') => void;
+  onTimeExpired?: () => void;
   isActive: boolean;
   hasBet?: boolean;
   userPosition?: number;
 }
 
-export function PredictionCard({ prediction, onSwipe, isActive, hasBet = false, userPosition }: PredictionCardProps) {
+export function PredictionCard({ prediction, onSwipe, onTimeExpired, isActive, hasBet = false, userPosition }: PredictionCardProps) {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [showFeedback, setShowFeedback] = useState<'up' | 'down' | null>(null);
+  const [isExpired, setIsExpired] = useState(false);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-15, 15]);
@@ -29,10 +31,21 @@ export function PredictionCard({ prediction, onSwipe, isActive, hasBet = false, 
     const interval = setInterval(() => {
       const remaining = Math.max(0, prediction.endsAt - Date.now());
       setTimeLeft(remaining);
+
+      // Check if time has expired
+      if (remaining === 0 && !isExpired && !hasBet) {
+        setIsExpired(true);
+        // Trigger dissolve animation and callback after a short delay
+        setTimeout(() => {
+          if (onTimeExpired) {
+            onTimeExpired();
+          }
+        }, 800); // Wait for dissolve animation
+      }
     }, 100);
 
     return () => clearInterval(interval);
-  }, [prediction.endsAt, isActive]);
+  }, [prediction.endsAt, isActive, isExpired, hasBet, onTimeExpired]);
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (hasBet) return; // Don't allow swiping if already bet
@@ -86,41 +99,56 @@ export function PredictionCard({ prediction, onSwipe, isActive, hasBet = false, 
     <motion.div
       className="absolute inset-0 flex items-center justify-center p-4"
       style={{ x, rotate, opacity }}
-      drag={isActive && !hasBet ? "x" : false}
+      drag={isActive && !hasBet && !isExpired ? "x" : false}
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.7}
       onDragEnd={handleDragEnd}
       animate={showFeedback ? {
         x: showFeedback === 'up' ? 300 : -300,
         opacity: 0
+      } : isExpired ? {
+        scale: 0.8,
+        opacity: 0,
+        y: 20,
+        filter: "blur(10px)"
       } : {}}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      transition={isExpired ? {
+        duration: 0.8,
+        ease: "easeOut"
+      } : {
+        type: "spring",
+        stiffness: 300,
+        damping: 30
+      }}
     >
       <Card className={cn(
-        "w-full max-w-md h-[600px] relative overflow-hidden border-2",
-        "bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-900 dark:to-neutral-950",
-        showFeedback === 'up' && "border-green-500",
-        showFeedback === 'down' && "border-red-500",
-        hasBet && userPosition === 0 && "border-green-500/50",
-        hasBet && userPosition === 1 && "border-red-500/50"
+        "w-full max-w-md h-[600px] relative overflow-hidden border-[3px] rounded-3xl",
+        "bg-[#27262c]",
+        showFeedback === 'up' && "border-[#31d0aa]",
+        showFeedback === 'down' && "border-[#ed4b9e]",
+        hasBet && userPosition === 0 && "border-[#31d0aa]/50",
+        hasBet && userPosition === 1 && "border-[#ed4b9e]/50",
+        isExpired && "border-[#666171]",
+        !showFeedback && !hasBet && !isExpired && "border-[#383241]",
+        timeLeft < 3000 && timeLeft > 0 && !hasBet && !isExpired && "border-[#ed4b9e] animate-pulse"
       )}>
         {/* Swipe indicators */}
         <motion.div
-          className="absolute inset-0 bg-green-500/10 flex items-center justify-start pl-12 pointer-events-none z-10"
+          className="absolute inset-0 bg-[#31d0aa]/10 flex items-center justify-start pl-12 pointer-events-none z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: x.get() > 50 ? 1 : 0 }}
         >
-          <div className="bg-green-500 rounded-full p-6">
+          <div className="bg-[#31d0aa] rounded-full p-6">
             <TrendingUp className="w-12 h-12 text-white" strokeWidth={3} />
           </div>
         </motion.div>
 
         <motion.div
-          className="absolute inset-0 bg-red-500/10 flex items-center justify-end pr-12 pointer-events-none z-10"
+          className="absolute inset-0 bg-[#ed4b9e]/10 flex items-center justify-end pr-12 pointer-events-none z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: x.get() < -50 ? 1 : 0 }}
         >
-          <div className="bg-red-500 rounded-full p-6">
+          <div className="bg-[#ed4b9e] rounded-full p-6">
             <TrendingDown className="w-12 h-12 text-white" strokeWidth={3} />
           </div>
         </motion.div>
@@ -129,16 +157,16 @@ export function PredictionCard({ prediction, onSwipe, isActive, hasBet = false, 
           {/* Timer bar */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+              <span className="text-sm font-bold text-[#b8add2]">
                 Time Remaining
               </span>
-              <span className="text-lg font-bold text-neutral-900 dark:text-white">
+              <span className="text-xl font-black text-white">
                 {formatTime(timeLeft)}
               </span>
             </div>
-            <div className="h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+            <div className="h-3 bg-[#353547] rounded-full overflow-hidden">
               <motion.div
-                className="h-full bg-blue-500"
+                className="h-full bg-[#7645d9] rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.3 }}
@@ -148,50 +176,50 @@ export function PredictionCard({ prediction, onSwipe, isActive, hasBet = false, 
 
           {/* Asset Info */}
           <div className="text-center mb-8">
-            <div className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+            <div className="text-sm font-bold text-[#b8add2] mb-2">
               {prediction.symbol}
             </div>
-            <h2 className="text-4xl font-bold text-neutral-900 dark:text-white mb-2">
+            <h2 className="text-5xl font-black text-white mb-3">
               {prediction.asset}
             </h2>
-            <div className="text-5xl font-bold text-neutral-900 dark:text-white">
+            <div className="text-6xl font-black text-white">
               {formatCurrency(prediction.currentPrice)}
             </div>
           </div>
 
           {/* Question */}
-          <div className="bg-neutral-100 dark:bg-neutral-800 rounded-xl p-6 mb-8">
-            <p className="text-center text-lg font-medium text-neutral-700 dark:text-neutral-300">
-              Will the price go <span className="text-green-600 font-bold">UP</span> or{" "}
-              <span className="text-red-600 font-bold">DOWN</span> in {prediction.timeframe}s?
+          <div className="bg-[#353547] rounded-2xl p-6 mb-8">
+            <p className="text-center text-lg font-bold text-white">
+              Will the price go <span className="text-[#31d0aa] font-black">UP</span> or{" "}
+              <span className="text-[#ed4b9e] font-black">DOWN</span> in {prediction.timeframe}s?
             </p>
           </div>
 
           {/* Pools */}
           <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-xl p-4">
+            <div className="bg-[#31d0aa]/10 border-2 border-[#31d0aa]/30 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-2">
-                <ArrowUpRight className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium text-green-700 dark:text-green-400">UP</span>
+                <ArrowUpRight className="w-6 h-6 text-[#31d0aa]" strokeWidth={3} />
+                <span className="text-base font-black text-[#31d0aa]">UP</span>
               </div>
-              <div className="text-2xl font-bold text-green-600 mb-1">
+              <div className="text-3xl font-black text-[#31d0aa] mb-1">
                 {prediction.multiplierUp}x
               </div>
-              <div className="text-xs text-green-600/70">
-                Pool: {formatPool(prediction.poolUp)}
+              <div className="text-xs font-bold text-[#31d0aa]/70">
+                Payout
               </div>
             </div>
 
-            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-xl p-4">
+            <div className="bg-[#ed4b9e]/10 border-2 border-[#ed4b9e]/30 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-2">
-                <ArrowDownRight className="w-5 h-5 text-red-600" />
-                <span className="text-sm font-medium text-red-700 dark:text-red-400">DOWN</span>
+                <ArrowDownRight className="w-6 h-6 text-[#ed4b9e]" strokeWidth={3} />
+                <span className="text-base font-black text-[#ed4b9e]">DOWN</span>
               </div>
-              <div className="text-2xl font-bold text-red-600 mb-1">
+              <div className="text-3xl font-black text-[#ed4b9e] mb-1">
                 {prediction.multiplierDown}x
               </div>
-              <div className="text-xs text-red-600/70">
-                Pool: {formatPool(prediction.poolDown)}
+              <div className="text-xs font-bold text-[#ed4b9e]/70">
+                Payout
               </div>
             </div>
           </div>
@@ -200,24 +228,24 @@ export function PredictionCard({ prediction, onSwipe, isActive, hasBet = false, 
           <div className="mt-auto">
             {hasBet ? (
               <div className={cn(
-                "rounded-xl p-4 text-center",
-                userPosition === 0 ? "bg-green-500/20 border-2 border-green-500" : "bg-red-500/20 border-2 border-red-500"
+                "rounded-2xl p-5 text-center border-2",
+                userPosition === 0 ? "bg-[#31d0aa]/20 border-[#31d0aa]" : "bg-[#ed4b9e]/20 border-[#ed4b9e]"
               )}>
                 <p className={cn(
-                  "text-sm font-bold",
-                  userPosition === 0 ? "text-green-500" : "text-red-500"
+                  "text-base font-black",
+                  userPosition === 0 ? "text-[#31d0aa]" : "text-[#ed4b9e]"
                 )}>
                   You bet: {userPosition === 0 ? 'UP ⬆' : 'DOWN ⬇'}
                 </p>
-                <p className="text-xs text-neutral-400 mt-1">
+                <p className="text-xs font-bold text-[#b8add2] mt-1">
                   Waiting for round to end...
                 </p>
               </div>
             ) : (
-              <div className="bg-neutral-900 dark:bg-white rounded-xl p-4 text-center">
-                <p className="text-sm text-white dark:text-neutral-900 font-medium">
-                  Swipe <span className="text-green-400 dark:text-green-600">RIGHT</span> for UP •
-                  Swipe <span className="text-red-400 dark:text-red-600"> LEFT</span> for DOWN
+              <div className="bg-[#353547] rounded-2xl p-5 text-center">
+                <p className="text-sm text-white font-bold">
+                  Swipe <span className="text-[#31d0aa] font-black">RIGHT</span> for UP •
+                  Swipe <span className="text-[#ed4b9e] font-black"> LEFT</span> for DOWN
                 </p>
               </div>
             )}
