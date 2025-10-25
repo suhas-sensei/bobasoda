@@ -1,15 +1,19 @@
-// Auto-execute rounds every 60 seconds
+// Auto-execute rounds every 20 seconds
 const { exec } = require('child_process');
 
-const CONTRACT = '0x2193622E5797C9D4C6cD8b486814453F4b2530B4';
+const CONTRACT = '0xe13b125064104289208396aCB9B201eF3aa22903'; // Pyth contract
 const RPC = 'https://sepolia.base.org';
 const KEY = '0x2812270ffa3e05a6f9a0e136b34f94fad94125652fc06053f09ad83dad293315';
 
 // Path to cast.exe (from foundry installation)
-const CAST = 'C:\\Users\\suhas\\.foundry\\bin\\cast.exe';
+const CAST = 'C:\\Users\\1234s\\.foundry\\bin\\cast.exe';
 
-console.log('🤖 Auto-executing rounds every 60 seconds with Pyth!');
+console.log('🤖 BobaSoda - Auto-executing rounds every 20 seconds');
+console.log('Contract:', CONTRACT);
 console.log('Press Ctrl+C to stop\n');
+
+let successCount = 0;
+let failCount = 0;
 
 function executeRound() {
     const time = new Date().toLocaleTimeString();
@@ -19,9 +23,11 @@ function executeRound() {
 
     exec(cmd, (error, stdout, stderr) => {
         if (error) {
-            console.log('⏭️  Waiting for next interval...\n');
+            failCount++;
+            console.log(`⚠️  Failed (${successCount} success / ${failCount} failed)\n`);
         } else {
-            console.log('✅ Success!\n');
+            successCount++;
+            console.log(`✅ Success! (${successCount} success / ${failCount} failed)\n`);
         }
     });
 }
@@ -29,5 +35,6 @@ function executeRound() {
 // Execute immediately
 executeRound();
 
-// Then execute every 60 seconds
-setInterval(executeRound, 60000);
+// Then execute every 5 seconds to catch the buffer window
+// (Buffer is tight at 15s, so we need to check frequently)
+setInterval(executeRound, 5000);

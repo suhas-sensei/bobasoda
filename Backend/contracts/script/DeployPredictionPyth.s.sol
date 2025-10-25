@@ -12,11 +12,11 @@ contract DeployPredictionPyth is Script {
     // ETH/USD Price Feed ID on Pyth
     bytes32 constant ETH_USD_PRICE_ID = 0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
 
-    // Configuration - 60 SECOND INTERVALS WITH PYTH!
-    uint256 constant INTERVAL_SECONDS = 60; // 1 minute - Pyth updates every 400ms!
-    uint256 constant BUFFER_SECONDS = 60; // 60 seconds buffer (MUST be >= interval for auto-execution)
-    uint256 constant MIN_BET_AMOUNT = 0.0001 ether; // 0.0001 ETH minimum bet
-    uint256 constant TREASURY_FEE = 300; // 3% (300 / 10000)
+    // Configuration - 20 SECOND INTERVALS WITH PYTH!
+    uint256 constant INTERVAL_SECONDS = 20; // 20 seconds - Pyth updates every 400ms!
+    uint256 constant BUFFER_SECONDS = 20; // 20 seconds buffer (must be >= interval)
+    uint256 constant MIN_BET_AMOUNT = 0.001 ether; // 0.001 ETH minimum bet
+    uint256 constant TREASURY_FEE = 1000; // 10% (1000 / 10000)
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");

@@ -168,27 +168,37 @@ export function usePredictionContract() {
     }
   }, [contract]);
 
-  // Get current price from oracle (simplified for Pyth - get from current round)
+  // Get current price from Pyth oracle directly
   const getCurrentPrice = useCallback(async () => {
     if (!contract) return null;
     try {
-      // Get current epoch
-      const epoch = await contract.currentEpoch();
-      if (epoch === 0n) return null;
+      // Get the pyth contract address from the prediction contract
+      const pythAddress = await contract.pyth();
+      const priceId = await contract.priceId();
 
-      // Get current round data
-      const round = await contract.rounds(epoch);
+      // Create Pyth contract instance
+      const pythAbi = [
+        'function getPriceUnsafe(bytes32 id) external view returns (int64 price, uint64 conf, int32 expo, uint publishTime)'
+      ];
+      const provider = contract.runner?.provider;
+      if (!provider) return null;
 
-      // If round has a lock price, use it (Pyth price with 8 decimals)
-      if (round.lockPrice && round.lockPrice > 0n) {
-        return Number(round.lockPrice) / 1e8;
-      }
+      const pythContract = new ethers.Contract(pythAddress, pythAbi, provider);
 
-      // Otherwise, try to get from Pyth directly (pyth.getPriceUnsafe)
-      // For now, return null and we'll get it when round locks
-      return null;
+      // Get latest price from Pyth
+      const priceData = await pythContract.getPriceUnsafe(priceId);
+
+      // Pyth returns price with expo (usually -8 for ETH/USD)
+      // price * 10^expo = actual price
+      const price = Number(priceData[0]); // int64 price
+      const expo = Number(priceData[2]); // int32 expo (signed)
+      const actualPrice = price * Math.pow(10, expo);
+
+      console.log('Pyth price data:', { price, expo, actualPrice });
+
+      return actualPrice;
     } catch (error) {
-      console.error('Error fetching current price:', error);
+      console.error('Error fetching current price from Pyth oracle:', error);
       return null;
     }
   }, [contract]);

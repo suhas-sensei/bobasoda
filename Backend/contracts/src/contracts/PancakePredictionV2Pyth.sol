@@ -99,11 +99,6 @@ contract PancakePredictionV2Pyth is Ownable, Pausable, ReentrancyGuard {
         _;
     }
 
-    modifier notContract() {
-        require(!_isContract(msg.sender), "Contract not allowed");
-        require(msg.sender == tx.origin, "Proxy contract not allowed");
-        _;
-    }
 
     constructor(
         address _pythContract,
@@ -127,7 +122,7 @@ contract PancakePredictionV2Pyth is Ownable, Pausable, ReentrancyGuard {
         treasuryFee = _treasuryFee;
     }
 
-    function betBear(uint256 epoch) external payable whenNotPaused nonReentrant notContract {
+    function betBear(uint256 epoch) external payable whenNotPaused nonReentrant {
         require(epoch == currentEpoch, "Bet is too early/late");
         require(_bettable(epoch), "Round not bettable");
         require(msg.value >= minBetAmount, "Bet amount must be greater than minBetAmount");
@@ -146,7 +141,7 @@ contract PancakePredictionV2Pyth is Ownable, Pausable, ReentrancyGuard {
         emit BetBear(msg.sender, epoch, amount);
     }
 
-    function betBull(uint256 epoch) external payable whenNotPaused nonReentrant notContract {
+    function betBull(uint256 epoch) external payable whenNotPaused nonReentrant {
         require(epoch == currentEpoch, "Bet is too early/late");
         require(_bettable(epoch), "Round not bettable");
         require(msg.value >= minBetAmount, "Bet amount must be greater than minBetAmount");
@@ -165,7 +160,7 @@ contract PancakePredictionV2Pyth is Ownable, Pausable, ReentrancyGuard {
         emit BetBull(msg.sender, epoch, amount);
     }
 
-    function claim(uint256[] calldata epochs) external nonReentrant notContract {
+    function claim(uint256[] calldata epochs) external nonReentrant {
         uint256 reward;
 
         for (uint256 i = 0; i < epochs.length; i++) {
@@ -454,14 +449,6 @@ contract PancakePredictionV2Pyth is Ownable, Pausable, ReentrancyGuard {
 
         require(price > 0, "Invalid price from Pyth");
         return price;
-    }
-
-    function _isContract(address account) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(account)
-        }
-        return size > 0;
     }
 
     receive() external payable {}

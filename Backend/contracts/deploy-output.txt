@@ -1,0 +1,20 @@
+Compiling 34 files with Solc 0.8.20
+Solc 0.8.20 finished in 20.75s
+Compiler run successful with warnings:
+Warning (2018): Function state mutability can be restricted to pure
+  --> src/contracts/test/MockAggregatorV3.sol:90:5:
+   |
+90 |     function description() external view override returns (string memory) {
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Traces:
+  [2976574] → new DeployPredictionPyth@0x9f7cF1d1F558E57ef88a59ac3D47214eF25B6A06
+    └─ ← [Return] 14756 bytes of code
+
+  [2928] DeployPredictionPyth::run()
+    ├─ [0] VM::envUint("PRIVATE_KEY") [staticcall]
+    │   └─ ← [Revert] vm.envUint: environment variable "PRIVATE_KEY" not found
+    └─ ← [Revert] vm.envUint: environment variable "PRIVATE_KEY" not found
+
+
+Error: script failed: vm.envUint: environment variable "PRIVATE_KEY" not found

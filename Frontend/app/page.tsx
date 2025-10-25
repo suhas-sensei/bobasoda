@@ -12,6 +12,7 @@ export default function Home() {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [hasBet, setHasBet] = useState(false);
   const [useMockData, setUseMockData] = useState(false);
+  const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
 
   // Check if we should use mock data (when contract not deployed)
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function Home() {
     }
   }, [isConnected, currentRound, currentPrice]);
 
-  // Fetch current price from oracle
+  // Fetch current price from oracle every 2 seconds
   useEffect(() => {
     const fetchPrice = async () => {
       const price = await getCurrentPrice();
@@ -43,10 +44,18 @@ export default function Home() {
 
     if (isConnected && !useMockData) {
       fetchPrice();
-      const interval = setInterval(fetchPrice, 10000); // Update every 10 seconds
+      const interval = setInterval(fetchPrice, 2000); // Update every 2 seconds
       return () => clearInterval(interval);
     }
   }, [isConnected, getCurrentPrice, useMockData]);
+
+  // Update current time every second for live countdown
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Math.floor(Date.now() / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Check if user has bet in current round
   useEffect(() => {
@@ -112,6 +121,7 @@ export default function Home() {
   const mockRound = {
     bullAmount: 0n,
     bearAmount: 0n,
+    startTimestamp: BigInt(Math.floor(Date.now() / 1000)),
     lockTimestamp: BigInt(Math.floor(Date.now() / 1000) + 20), // 20 seconds from now
   };
 
@@ -143,18 +153,65 @@ export default function Home() {
 
       {/* Stats overlay - top */}
       <div className={`absolute top-0 left-0 right-0 p-6 z-20 ${useMockData ? 'mt-8' : ''}`}>
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <div className="text-white">
-            <div className="text-xs text-neutral-400 mb-1">Connected</div>
-            <div className="text-sm font-bold truncate max-w-[150px]">{account?.slice(0, 6)}...{account?.slice(-4)}</div>
+        <div className="max-w-md mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-white">
+              <div className="text-xs text-neutral-400 mb-1">Connected</div>
+              <div className="text-sm font-bold truncate max-w-[150px]">{account?.slice(0, 6)}...{account?.slice(-4)}</div>
+            </div>
+            <div className="text-white text-center">
+              <div className="text-xs text-neutral-400 mb-1">Balance</div>
+              <div className="text-sm font-bold">{balance ? `${parseFloat(balance).toFixed(4)} ETH` : '...'}</div>
+            </div>
+            <div className="text-white">
+              <div className="text-xs text-neutral-400 mb-1 text-right">Round</div>
+              <div className="text-xl font-bold text-right">#{activeEpoch?.toString()}</div>
+            </div>
           </div>
-          <div className="text-white text-center">
-            <div className="text-xs text-neutral-400 mb-1">Balance</div>
-            <div className="text-sm font-bold">{balance ? `${parseFloat(balance).toFixed(4)} ETH` : '...'}</div>
-          </div>
-          <div className="text-white">
-            <div className="text-xs text-neutral-400 mb-1 text-right">Round</div>
-            <div className="text-xl font-bold text-right">#{activeEpoch?.toString()}</div>
+
+          {/* Debug Status Display */}
+          {!useMockData && currentRound && (() => {
+            const lockTime = Number(currentRound.lockTimestamp);
+            const closeTime = Number(currentRound.closeTimestamp);
+            const timeUntilLock = Math.max(0, lockTime - currentTime);
+            const timeUntilClose = Math.max(0, closeTime - currentTime);
+
+            let phase = '🟢 BETTING OPEN';
+            let timeDisplay = `${timeUntilLock}s`;
+
+            if (currentTime >= closeTime) {
+              phase = '⏳ WAITING FOR NEXT ROUND';
+              timeDisplay = 'Processing...';
+            } else if (currentTime >= lockTime) {
+              phase = '🔴 ROUND LOCKED';
+              timeDisplay = `Closing in ${timeUntilClose}s`;
+            }
+
+            return (
+              <div className="bg-black/50 rounded-lg p-3 mb-2 text-xs text-white space-y-1">
+                <div className="flex justify-between">
+                  <span>Status:</span>
+                  <span className="font-bold">{phase}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>{currentTime < lockTime ? 'Time to Lock:' : 'Time Remaining:'}</span>
+                  <span className="font-bold">{timeDisplay}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Price Updates:</span>
+                  <span className="font-bold">{currentPrice ? `$${currentPrice.toFixed(2)}` : 'Loading...'}</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          <div className="flex justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-600 text-red-400 rounded-lg text-xs font-semibold transition-colors"
+            >
+              Disconnect Wallet
+            </button>
           </div>
         </div>
       </div>
