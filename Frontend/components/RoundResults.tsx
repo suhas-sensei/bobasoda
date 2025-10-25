@@ -23,14 +23,19 @@ export function RoundResults({ result, onNextRound }: RoundResultsProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#08060b] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center overflow-hidden relative">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a1028] via-[#08060b] to-black" />
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="relative z-10 w-full max-w-2xl"
-      >
+      {/* Phone screen container */}
+      <div className="relative w-full max-w-[550px] h-screen bg-[#08060b] shadow-2xl overflow-y-auto">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a1028] via-[#08060b] to-black" />
+
+        <div className="relative z-10 flex items-center justify-center p-4 min-h-screen">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full"
+          >
         {/* Main Result Card */}
         <div className="bg-[#27262c] border-[3px] border-[#383241] rounded-3xl p-8 mb-6">
           {/* Header */}
@@ -155,7 +160,9 @@ export function RoundResults({ result, onNextRound }: RoundResultsProps) {
             Start Next Round
           </motion.button>
         </div>
-      </motion.div>
+          </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

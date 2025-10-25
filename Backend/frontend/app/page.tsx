@@ -1,9 +1,13 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8">
-      <main className="max-w-4xl w-full text-center space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center overflow-hidden">
+      {/* Phone screen container */}
+      <div className="relative w-full max-w-[550px] h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] shadow-2xl overflow-y-auto">
+        <main className="flex flex-col items-center justify-center p-8 pb-32 min-h-screen">
+          <div className="w-full text-center space-y-8">
         <h1 className="text-5xl font-bold tracking-tight">Boba Soda</h1>
 
         <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
@@ -40,7 +44,26 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </main>
+        </div>
+        </main>
+
+        {/* Bottom Navbar */}
+        <div className="absolute bottom-6 left-0 right-0 px-6 z-50">
+          <div className="w-full max-w-md mx-auto">
+            {/* Navbar Image */}
+            <div className="relative w-full h-20 flex items-center justify-center">
+              <Image
+                src="/image.png"
+                alt="Navigation Bar"
+                width={500}
+                height={80}
+                className="object-contain"
+                priority
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

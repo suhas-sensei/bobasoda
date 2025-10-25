@@ -1,26 +1,38 @@
 'use client';
 
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useRouter } from 'next/navigation';
 
 export function LoginScreen() {
+  const router = useRouter();
+
+  const handleConnectClick = () => {
+    // Redirect to homepage when Connect Wallet is clicked
+    router.push('/');
+  };
+
   return (
-    <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center">
-      {/* Video Background */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      >
-        <source src="/login.mp4" type="video/mp4" />
-      </video>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center overflow-hidden relative">
+      {/* Background gradient for desktop */}
+      <div className="absolute inset-0 bg-black/50" />
 
-      {/* Overlay for darkening video */}
-      <div className="absolute inset-0 bg-black/30" />
+      {/* Phone screen container */}
+      <div className="relative w-full max-w-[550px] h-screen overflow-hidden shadow-2xl">
+        {/* Video Background */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/login.mp4" type="video/mp4" />
+        </video>
 
-      {/* Glassmorphic Login Card */}
-      <div className="relative z-10 w-full max-w-md mx-4">
+        {/* Overlay for darkening video */}
+        <div className="absolute inset-0 bg-black/30" />
+
+        {/* Glassmorphic Login Card */}
+        <div className="relative z-10 h-full flex items-center justify-center px-4">
         {/* Glass container with blur effect */}
         <div className="relative backdrop-blur-2xl bg-white/10 border border-white/20 rounded-3xl p-8 shadow-2xl">
           {/* Gradient overlay for glass effect */}
@@ -40,105 +52,19 @@ export function LoginScreen() {
 
             {/* Description */}
             <p className="text-white/80 text-sm font-medium">
-              Connect your wallet to start predicting crypto price movements
+              Start predicting crypto price movements
             </p>
 
             {/* Connect Button Container with Glass Effect */}
             <div className="pt-4">
               <div className="backdrop-blur-xl bg-white/5 border border-white/30 rounded-2xl p-1 inline-block shadow-xl">
-                <ConnectButton.Custom>
-                  {({
-                    account,
-                    chain,
-                    openAccountModal,
-                    openChainModal,
-                    openConnectModal,
-                    mounted,
-                  }) => {
-                    const ready = mounted;
-                    const connected = ready && account && chain;
-
-                    return (
-                      <div
-                        {...(!ready && {
-                          'aria-hidden': true,
-                          style: {
-                            opacity: 0,
-                            pointerEvents: 'none',
-                            userSelect: 'none',
-                          },
-                        })}
-                      >
-                        {(() => {
-                          if (!connected) {
-                            return (
-                              <button
-                                onClick={openConnectModal}
-                                type="button"
-                                className="px-12 py-4 bg-gradient-to-r from-[#7645d9] to-[#9d4edd] hover:from-[#633bb5] hover:to-[#8438c9] text-white rounded-xl font-black text-lg transition-all duration-300 shadow-2xl hover:shadow-purple-500/50 hover:scale-105 active:scale-95"
-                              >
-                                Connect Wallet
-                              </button>
-                            );
-                          }
-
-                          if (chain.unsupported) {
-                            return (
-                              <button
-                                onClick={openChainModal}
-                                type="button"
-                                className="px-12 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-black text-lg transition-all duration-300 shadow-2xl"
-                              >
-                                Wrong network
-                              </button>
-                            );
-                          }
-
-                          return (
-                            <div className="flex gap-3">
-                              <button
-                                onClick={openChainModal}
-                                type="button"
-                                className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white rounded-xl font-bold transition-all duration-300"
-                              >
-                                {chain.hasIcon && (
-                                  <div
-                                    style={{
-                                      background: chain.iconBackground,
-                                      width: 24,
-                                      height: 24,
-                                      borderRadius: 999,
-                                      overflow: 'hidden',
-                                      marginRight: 8,
-                                      display: 'inline-block',
-                                    }}
-                                  >
-                                    {chain.iconUrl && (
-                                      <img
-                                        alt={chain.name ?? 'Chain icon'}
-                                        src={chain.iconUrl}
-                                        style={{ width: 24, height: 24 }}
-                                      />
-                                    )}
-                                  </div>
-                                )}
-                                {chain.name}
-                              </button>
-
-                              <button
-                                onClick={openAccountModal}
-                                type="button"
-                                className="px-6 py-3 bg-gradient-to-r from-[#7645d9] to-[#9d4edd] hover:from-[#633bb5] hover:to-[#8438c9] text-white rounded-xl font-bold transition-all duration-300"
-                              >
-                                {account.displayName}
-                              </button>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    );
-                  }}
-                </ConnectButton.Custom>
+                <button
+                  onClick={handleConnectClick}
+                  type="button"
+                  className="px-12 py-4 bg-gradient-to-r from-[#7645d9] to-[#9d4edd] hover:from-[#633bb5] hover:to-[#8438c9] text-white rounded-xl font-black text-lg transition-all duration-300 shadow-2xl hover:shadow-purple-500/50 hover:scale-105 active:scale-95"
+                >
+                  Connect Wallet
+                </button>
               </div>
             </div>
 
@@ -149,9 +75,7 @@ export function LoginScreen() {
             </div>
           </div>
         </div>
-
-        {/* Bottom glow effect */}
-        <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-64 h-64 bg-purple-500/30 rounded-full blur-3xl pointer-events-none" />
+        </div>
       </div>
     </div>
   );
