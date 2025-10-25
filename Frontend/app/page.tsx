@@ -1,16 +1,20 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect, useRef } from "react";
 import { PredictionCard } from "@/components/PredictionCard";
 import { RoundResults } from "@/components/RoundResults";
 import { LoginScreen } from "@/components/LoginScreen";
-import { useAccount } from "wagmi";
+import { usePrivy } from "@privy-io/react-auth";
 import { BetDirection, DemoRoundResult } from "@/types/prediction";
 import { fetchCryptoPrices, getRandomCryptos, CryptoPrice } from "@/lib/crypto-prices";
 import { DemoGame, DemoCard } from "@/lib/demo-game";
 
 export default function Home() {
-  const { address: account, isConnected } = useAccount();
+  const { authenticated, user } = usePrivy();
+  const account = user?.wallet?.address;
+  const isConnected = authenticated;
 
   // Demo mode states
   const [demoMode] = useState(true); // Always in demo mode
@@ -42,14 +46,20 @@ export default function Home() {
 
     // Select 5 random cryptos
     const selectedIds = getRandomCryptos(5);
-    const cards: DemoCard[] = selectedIds.map(id => {
-      const crypto = prices.find(p => p.id === id)!;
-      return {
-        crypto,
-        startPrice: crypto.currentPrice,
-        timeframe: 15, // 15 seconds per card
-      };
-    });
+    const cards: DemoCard[] = selectedIds
+      .map(id => {
+        const crypto = prices.find(p => p.id === id);
+        if (!crypto) {
+          console.warn(`Crypto not found for id: ${id}`);
+          return null;
+        }
+        return {
+          crypto,
+          startPrice: crypto.currentPrice,
+          timeframe: 15, // 15 seconds per card
+        };
+      })
+      .filter((card): card is DemoCard => card !== null);
 
     setCurrentCards(cards);
   };

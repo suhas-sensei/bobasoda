@@ -60,7 +60,7 @@ const FALLBACK_PRICES: Record<string, CryptoPrice> = {
     currentPrice: 7.45,
     priceChange24h: -2.1,
   },
-  avalanche: {
+  'avalanche-2': {
     id: 'avalanche-2',
     name: 'Avalanche',
     symbol: 'AVAX',
