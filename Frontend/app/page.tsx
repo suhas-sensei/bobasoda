@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { PredictionCard } from "@/components/PredictionCard";
 import { RoundResults } from "@/components/RoundResults";
 import { LoginScreen } from "@/components/LoginScreen";
+import { WalletInfo } from "@/components/WalletInfo";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAccount, useChainId } from "wagmi";
 import { BetDirection, DemoRoundResult } from "@/types/prediction";
@@ -188,10 +189,7 @@ export default function Home() {
         </div>
 
         <div className="max-w-md mx-auto flex items-center justify-between">
-          <div className="text-white">
-            <div className="text-xs font-bold text-[#b8add2] mb-1">Connected</div>
-            <div className="text-sm font-black truncate max-w-[150px]">{account?.slice(0, 6)}...{account?.slice(-4)}</div>
-          </div>
+          <WalletInfo />
           <div className="text-white text-center">
             <div className="text-xs font-bold text-[#b8add2] mb-1">Round</div>
             <div className="text-2xl font-black">#{roundNumber}</div>
