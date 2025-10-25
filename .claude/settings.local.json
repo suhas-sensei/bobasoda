@@ -34,7 +34,11 @@
       "Bash(WALLET=0x75110c86Ba04fA22Fd77143D37D89e1B63eAAbA8:*)",
       "WebSearch",
       "WebFetch(domain:docs.pyth.network)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(cast balance:*)",
+      "Bash(cast tx-count:*)",
+      "Bash(cast nonce:*)",
+      "WebFetch(domain:api-reference.pyth.network)"
     ],
     "deny": [],
     "ask": []

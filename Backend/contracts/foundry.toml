@@ -19,5 +19,6 @@ fs_permissions = [{ access = "read-write", path = "./deployments" }]
 [rpc_endpoints]
 base_sepolia = "https://sepolia.base.org"
 base_mainnet = "https://mainnet.base.org"
+celo_alfajores = "https://alfajores-forno.celo-testnet.org"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
