@@ -7,14 +7,43 @@ import { PredictionCard } from "@/components/PredictionCard";
 import { RoundResults } from "@/components/RoundResults";
 import { LoginScreen } from "@/components/LoginScreen";
 import { usePrivy } from "@privy-io/react-auth";
+import { useAccount, useChainId } from "wagmi";
 import { BetDirection, DemoRoundResult } from "@/types/prediction";
 import { fetchCryptoPrices, getRandomCryptos, CryptoPrice } from "@/lib/crypto-prices";
 import { DemoGame, DemoCard } from "@/lib/demo-game";
 
 export default function Home() {
   const { authenticated, user } = usePrivy();
-  const account = user?.wallet?.address;
   const isConnected = authenticated;
+
+  // Network detection - use wagmi's useAccount for wallet address and chain
+  const chainId = useChainId();
+  const { address: account, chain } = useAccount();
+
+  // Log network info when connected
+  useEffect(() => {
+    if (isConnected && account) {
+      console.log('═══════════════════════════════════════');
+      console.log('🔗 NETWORK INFO');
+      console.log('═══════════════════════════════════════');
+      console.log('Chain ID:', chainId);
+      console.log('Chain Name:', chain?.name);
+      console.log('Is Celo Sepolia?', chainId === 11142220);
+      console.log('───────────────────────────────────────');
+      console.log('💼 YOUR WALLET ADDRESS:');
+      console.log(account);
+      console.log('───────────────────────────────────────');
+      console.log('📋 Privy User Info:', user);
+      console.log('═══════════════════════════════════════');
+
+      // Make it easy to copy
+      if (typeof window !== 'undefined') {
+        (window as any).walletAddress = account;
+        (window as any).chainId = chainId;
+        console.log('💡 TIP: Type "walletAddress" or "chainId" in console to see values again');
+      }
+    }
+  }, [isConnected, chainId, chain, account, user]);
 
   // Demo mode states
   const [demoMode] = useState(true); // Always in demo mode
@@ -138,6 +167,26 @@ export default function Home() {
 
       {/* Stats overlay - top */}
       <div className="absolute top-0 left-0 right-0 p-6 z-20">
+        {/* Network indicator */}
+        <div className="max-w-md mx-auto mb-3 flex justify-center">
+          <div className={`px-4 py-2 rounded-full backdrop-blur-xl border-2 ${
+            chainId === 11142220
+              ? 'bg-[#31d0aa]/20 border-[#31d0aa]'
+              : 'bg-yellow-500/20 border-yellow-500'
+          }`}>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                chainId === 11142220 ? 'bg-[#31d0aa]' : 'bg-yellow-500'
+              } animate-pulse`} />
+              <span className={`text-xs font-bold ${
+                chainId === 11142220 ? 'text-[#31d0aa]' : 'text-yellow-500'
+              }`}>
+                {chainId === 11142220 ? 'Celo Sepolia Testnet' : (chain?.name || 'Unknown Network')} (ID: {chainId})
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="text-white">
             <div className="text-xs font-bold text-[#b8add2] mb-1">Connected</div>

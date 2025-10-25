@@ -7,13 +7,37 @@ import { privyConfig, celoSepoliaTestnet } from './privy-config';
 import { http } from 'wagmi';
 import { createConfig } from '@privy-io/wagmi';
 import { ReactNode } from 'react';
+import { defineChain } from 'viem';
 
 const queryClient = new QueryClient();
 
+// Define Celo Sepolia as a proper viem chain
+export const celoSepolia = defineChain({
+  id: 11142220,
+  name: 'Celo Sepolia Testnet',
+  nativeCurrency: {
+    name: 'CELO',
+    symbol: 'CELO',
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc.ankr.com/celo_sepolia'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Celo Explorer',
+      url: 'https://explorer.celo.org/sepolia',
+    },
+  },
+  testnet: true,
+});
+
 export const wagmiConfig = createConfig({
-  chains: [celoSepoliaTestnet as any],
+  chains: [celoSepolia],
   transports: {
-    [celoSepoliaTestnet.id]: http(),
+    [celoSepolia.id]: http('https://rpc.ankr.com/celo_sepolia'),
   },
 });
 
