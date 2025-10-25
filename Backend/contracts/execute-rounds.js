@@ -9,8 +9,8 @@
 
 const { exec } = require('child_process');
 
-const CONTRACT = '0x2193622E5797C9D4C6cD8b486814453F4b2530B4';
-const RPC = 'https://sepolia.base.org';
+const CONTRACT = '0x2193622E5797C9D4C6cD8b486814453F4b2530B4'; // Update with your Celo contract address
+const RPC = 'https://alfajores-forno.celo-testnet.org';
 const KEY = '0x2812270ffa3e05a6f9a0e136b34f94fad94125652fc06053f09ad83dad293315';
 
 // Detect OS and set cast path
@@ -24,7 +24,7 @@ let roundStartTime = Date.now();
 
 console.log('🤖 Auto-executing ETH Prediction rounds every 30 seconds!');
 console.log('📊 Contract:', CONTRACT);
-console.log('🔗 Network: Base Sepolia');
+console.log('🔗 Network: Celo Alfajores Testnet');
 console.log('⏰ Interval: 30 seconds per round');
 console.log('🔒 Price locks at 25 seconds');
 console.log('✅ Resolution at 30 seconds');
