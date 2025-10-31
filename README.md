@@ -70,4 +70,177 @@ It takes the excitement of trading and turns it into a game anyone can play — 
 - **[Ethers.js](https://docs.ethers.io)** — Blockchain interaction  
 
 ---
+
+## **How I Built It**
+
+Building Bobasoda was an exciting journey of combining blockchain technology with game-like user experience. Here's the technical story behind it:
+
+### **1. The Foundation: Smart Contracts**
+
+The core of Bobasoda is built on **PancakePrediction smart contracts** adapted for the Base network. I chose this architecture because:
+
+- **Proven Battle-Tested Logic**: Based on PancakeSwap's prediction market contracts that have processed millions of dollars in bets
+- **Round-Based System**: Clean epoch-based rounds that automatically progress every 60 seconds
+- **Oracle Integration**: Built-in Chainlink oracle support for trustless price feeds
+
+**Key Contract Modifications**:
+```
+- Interval: 60 seconds (20s betting + 40s resolution)
+- Network: Base Sepolia testnet
+- Oracle: Chainlink ETH/USD price feed
+- Min Bet: 0.001 ETH for accessibility
+```
+
+I used **Foundry** for smart contract development because it's blazing fast and provides excellent testing capabilities. The contracts were deployed using Hardhat for better network compatibility.
+
+### **2. Frontend Architecture: React + Web3**
+
+The frontend needed to be fast, intuitive, and mobile-first. I built it using:
+
+**Core Stack**:
+- **Next.js 15**: For server-side rendering and optimal performance
+- **TypeScript**: Full type safety across the entire codebase
+- **Ethers.js v6**: Modern Web3 library for blockchain interactions
+- **Framer Motion**: Smooth animations and gesture handling
+
+**Design Philosophy**:
+The UI is inspired by TikTok/Instagram Reels with a swipeable card interface:
+- **Swipe Right**: Bet UP (Bull position)
+- **Swipe Left**: Bet DOWN (Bear position)
+- **Auto-Progress**: Automatically moves to next round after 60 seconds
+
+This makes crypto betting feel like a familiar social media experience.
+
+### **3. Web3 Integration: Connecting Everything**
+
+The trickiest part was seamlessly connecting the frontend to smart contracts. Here's how I solved it:
+
+**Custom Web3 Context Provider** (`lib/web3/provider.tsx`):
+- Manages wallet connection state
+- Automatically switches to Base Sepolia network
+- Provides contract instance to entire app
+- Handles connection errors gracefully
+
+**Custom React Hooks** (`lib/web3/hooks.ts`):
+- `usePredictionContract()`: Fetches round data and user bets
+- `useOraclePrice()`: Gets live ETH/USD prices every 10 seconds
+- `useBetPlacement()`: Handles Bull/Bear bet transactions
+
+This abstraction keeps the main app code clean and testable.
+
+### **4. Real-Time Updates: Keeping Players Engaged**
+
+To make the game feel alive, I implemented several real-time features:
+
+- **Live Price Feed**: ETH/USD price updates every 10 seconds from Chainlink oracle
+- **Countdown Timer**: Shows exact seconds remaining in current round
+- **Pool Statistics**: Live bull/bear pool sizes and potential multipliers
+- **Bet Tracking**: Instantly shows your position after betting
+
+All data is fetched directly from the blockchain - no centralized database needed.
+
+### **5. Solving the Round Automation Challenge**
+
+The smart contracts require an operator to call `executeRound()` every 60 seconds. I solved this with:
+
+**Automated Bot** (`Backend/contracts/execute-rounds.js`):
+- Monitors blockchain for round progression
+- Automatically calls `executeRound()` when needed
+- Handles errors and retries failed transactions
+- Runs continuously to ensure smooth gameplay
+
+**Alternative**: For production, I recommend Chainlink Automation (formerly Keepers) for decentralized round execution.
+
+### **6. Base Network Integration**
+
+Choosing **Base** was crucial for several reasons:
+
+- **Low Gas Fees**: Makes small 0.001 ETH bets economically viable
+- **Fast Confirmations**: Transactions settle in seconds, not minutes
+- **Growing Ecosystem**: Access to Coinbase's user base
+- **EVM Compatible**: Easy to deploy existing Solidity contracts
+
+Network configuration in `lib/contracts/config.ts`:
+```typescript
+chainId: 84532 (Base Sepolia)
+rpcUrl: https://sepolia.base.org
+```
+
+### **7. User Experience Optimizations**
+
+Several small touches make a big difference:
+
+- **Automatic Network Switching**: App detects wrong network and prompts switch
+- **Loading States**: Clear feedback during transactions
+- **Error Handling**: User-friendly messages for failed bets
+- **Mobile Responsive**: Optimized for phone screens (375px - 428px width)
+- **Gesture Controls**: Intuitive swipe mechanics using Framer Motion
+
+### **8. Testing & Deployment**
+
+**Smart Contract Testing**:
+- Unit tests with Foundry for contract logic
+- Integration tests for oracle connections
+- Testnet deployment on Base Sepolia
+
+**Frontend Testing**:
+- TypeScript for compile-time safety
+- Manual testing on multiple devices
+- Real testnet transactions to verify flow
+
+**Deployment**:
+- Frontend: Vercel (automatic deployments from main branch)
+- Contracts: Hardhat deploy script to Base Sepolia
+- Bot: Node.js process on cloud server
+
+### **9. Key Technical Challenges Solved**
+
+**Challenge 1: BigInt Handling**  
+*Problem*: JavaScript doesn't natively handle Solidity's uint256  
+*Solution*: Updated TypeScript config to ES2020, used BigInt throughout
+
+**Challenge 2: Round Timing**  
+*Problem*: Keeping frontend timer in sync with blockchain  
+*Solution*: Fetch timestamps from contract, calculate client-side difference
+
+**Challenge 3: Transaction Failures**  
+*Problem*: Users lose gas on failed bets  
+*Solution*: Pre-validate betting conditions before sending transaction
+
+**Challenge 4: Wallet Onboarding**  
+*Problem*: Complex wallet setup scares away new users  
+*Solution*: Planning Base Subwallet integration for seamless onboarding
+
+### **10. What's Next**
+
+The foundation is solid, now focusing on:
+- [ ] Base Subwallet integration (gasless transactions)
+- [ ] Claim rewards UI
+- [ ] Historical round data and statistics
+- [ ] Leaderboard system
+- [ ] Multiple prediction markets (BTC, SOL, etc.)
+- [ ] Mainnet deployment
+
+### **Tools & Technologies Used**
+
+**Blockchain**:
+- Solidity 0.8.x
+- Foundry (testing)
+- Hardhat (deployment)
+- Chainlink (oracles)
+- Base L2 network
+
+**Frontend**:
+- Next.js 15
+- TypeScript
+- Tailwind CSS v4
+- Framer Motion
+- Ethers.js v6
+
+**DevOps**:
+- Git/GitHub
+- Vercel (hosting)
+- Node.js (automation bot)
+
+---
 **Base Subwallet x Bobasoda** — Bringing speed, simplicity, and on-chain fun together.
